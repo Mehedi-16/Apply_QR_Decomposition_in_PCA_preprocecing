@@ -517,11 +517,71 @@ QR পদ্ধতি বড় ডেটাকে ছোট ছোট ভাগে
 
 ---
 
-### সংক্ষেপে:
+# code Section #
 
-QR ভিত্তিক PCA পদ্ধতি ডেটার মাত্রা কমানোর জন্য একটি দ্রুত, কার্যকর ও স্থিতিশীল উপায়, যা অনেক বাস্তব জীবনের কাজে ব্যবহার করা যেতে পারে।
+### এবার আমি তোমার জন্য **Digits dataset দিয়ে QR-based PCA** সম্পূর্ণ কোড লিখে দিলাম, যাতে তুমি সহজে রান করাতে পারো, বুঝতে পারো, এবং নিজের প্রয়োজনমতো বদলাতে পারো।
+
+```python
+import numpy as np
+from sklearn.datasets import load_digits
+import matplotlib.pyplot as plt
+
+# Step 1: Load Digits dataset
+digits = load_digits()
+X = digits.data.T  # d x n (64 x 1797)
+
+# Step 2: Mean centering
+mean_vec = np.mean(X, axis=1, keepdims=True)
+H = X - mean_vec  # centered data matrix
+
+# Step 3: Economic QR decomposition of H
+Q1, R1 = np.linalg.qr(H, mode='reduced')  # Q1: d x t, R1: t x n (t=rank(H))
+
+# Step 4: SVD of R1^T
+U1, D1, Vt = np.linalg.svd(R1.T, full_matrices=False)  # U1: n x t, D1: t, Vt: t x t
+
+# Step 5: Select top h principal components
+h = 10  # Number of principal components to keep
+Vh = Vt.T[:, :h]  # t x h
+
+# Step 6: Compute PCA transform matrix
+Phi = Q1 @ Vh  # d x h
+
+# Step 7: Project the data
+Y = Phi.T @ H  # h x n
+
+print("Shape of centered data H:", H.shape)
+print("Shape of Q1:", Q1.shape)
+print("Shape of R1:", R1.shape)
+print("Singular values D1:", D1[:h])
+print("Shape of PCA transform matrix Phi:", Phi.shape)
+print("Shape of projected data Y:", Y.shape)
+
+# Visualization: Plot first two principal components, colored by digit label
+plt.figure(figsize=(8, 6))
+plt.scatter(Y[0, :], Y[1, :], c=digits.target, cmap='tab10', s=15)
+plt.xlabel("Principal Component 1")
+plt.ylabel("Principal Component 2")
+plt.title("QR-based PCA projection of Digits dataset")
+plt.colorbar(label='Digit label')
+plt.show()
+```
 
 ---
+
+### এই কোডে কী হলো:
+
+* **X** হল $64 \times 1797$ ডেটা, যেখানে 64 হল feature (pixel) সংখ্যা, 1797 হল sample সংখ্যা।
+* **Mean centering** দিয়ে ডেটা zero mean এ নিয়ে আসা হয়েছে।
+* **QR decomposition** দিয়ে ডেটাকে orthogonal (Q1) আর upper-triangular (R1) ম্যাট্রিক্সে ভাঙ্গা।
+* **R1^T এর SVD** করা হয়েছে, যাতে eigenvalues ও eigenvectors পাওয়া যায়।
+* বড় eigenvalues এর জন্য প্রধান কম্পোনেন্টস নেয়া হয়েছে।
+* অবশেষে ডেটাকে কম dimension (এখানে 10D) এ প্রজেক্ট করা হয়েছে।
+* প্রথম দুই প্রধান কম্পোনেন্ট দিয়ে 2D স্ক্যাটার প্লট তৈরি করা হয়েছে, যাতে আলাদা আলাদা ডিজিটগুলো আলাদা রঙে দেখা যায়।
+
+---
+
+
 
 
 
